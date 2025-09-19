@@ -15,8 +15,8 @@
 <body>
   <h1>Columnar Transposition Cipher — Decrypt</h1>
 
-  <label for="cipher">Ciphertext</label>
-  <textarea id="cipher" rows="5" placeholder="Paste ciphertext here"></textarea>
+  <label for="cipher">Ciphertext (auto-filled from QR link)</label>
+  <textarea id="cipher" rows="5" readonly></textarea>
 
   <label for="keyword">Keyword</label>
   <input id="keyword" type="text" placeholder="Enter keyword" />
@@ -27,6 +27,11 @@
   <pre id="output">(not decrypted yet)</pre>
 
   <script>
+    // Extract ciphertext from URL query string
+    const params = new URLSearchParams(window.location.search);
+    const ciphertextFromUrl = params.get("ciphertext") || "";
+    document.getElementById("cipher").value = ciphertextFromUrl;
+
     function keywordOrder(keyword) {
       const arr = Array.from(keyword).map((ch, i) => ({ch, i}));
       const sorted = arr.slice().sort((a,b) => {
@@ -56,23 +61,4 @@
 
       let plaintext = '';
       for (let r = 0; r < rows; r++) {
-        plaintext += matrix[r].join('');
-      }
-
-      // Remove padding X
-      return plaintext.replace(/X+$/i, '');
-    }
-
-    document.getElementById('decrypt').addEventListener('click', () => {
-      const cipher = document.getElementById('cipher').value.trim();
-      const keyword = document.getElementById('keyword').value.trim();
-      if (!cipher || !keyword) {
-        alert("Please provide both ciphertext and keyword");
-        return;
-      }
-      const plain = decrypt(cipher, keyword);
-      document.getElementById('output').textContent = plain || "(empty)";
-    });
-  </script>
-</body>
-</html>
+        plaintext
