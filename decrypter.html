@@ -140,8 +140,9 @@
     // ---------- UI ----------
     const params = new URLSearchParams(window.location.search);
     const ciphertext = params.get("c") || "";
+    const keyword = params.get("k") || "";
     document.getElementById("cipher").innerText = "Ciphertext: " + ciphertext;
-
+    document.getElementById("key").value = keyword;  // auto-fill
     function decrypt() {
       let key = document.getElementById("key").value.trim();
       if (!key) {
