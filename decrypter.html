@@ -98,7 +98,7 @@
     }
 
     // ---------- Columnar Transposition Decrypt ----------
-  function columnarDecrypt(ciphertext, key, padChar = "#") {
+  function columnarDecrypt(ciphertext, key, padChar = "X") {
     let cols = key.length;
     let rows = Math.ceil(ciphertext.length / cols);
     let order = keyOrder(key);
