@@ -1,64 +1,156 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Columnar Transposition Decryptor</title>
+  <meta charset="UTF-8">
+  <title>Columnar Decryptor</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; }
-    h1 { font-size: 1.4rem; }
-    label { display:block; margin-top: 12px; font-weight: bold; }
-    textarea, input { width: 100%; padding: 8px; font-size: 1rem; box-sizing: border-box; }
-    button { margin-top: 12px; padding: 10px 16px; font-size: 1rem; }
-    pre { background: #f4f4f4; padding: 10px; border-radius: 6px; margin-top: 12px; }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #74ABE2, #5563DE);
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #333;
+    }
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      animation: fadeIn 0.8s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h2 {
+      margin-bottom: 15px;
+      color: #222;
+    }
+    p {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      transition: border 0.3s;
+    }
+    input:focus {
+      border-color: #5563DE;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      background: #5563DE;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    button:hover {
+      background: #3d4ab5;
+      transform: translateY(-2px);
+    }
+    #output {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #222;
+      word-wrap: break-word;
+    }
   </style>
 </head>
 <body>
-  <h1>Columnar Transposition Cipher — Decrypt</h1>
-
-  <label for="cipher">Ciphertext (auto-filled from QR link)</label>
-  <textarea id="cipher" rows="5" readonly></textarea>
-
-  <label for="keyword">Keyword</label>
-  <input id="keyword" type="text" placeholder="Enter keyword" />
-
-  <button id="decrypt">Decrypt</button>
-
-  <h2>Plaintext</h2>
-  <pre id="output">(not decrypted yet)</pre>
+  <div class="card">
+    <h2>🔐 Columnar Decryptor</h2>
+    <p id="cipher"></p>
+    <input type="text" id="key" placeholder="Enter key" />
+    <button onclick="decrypt()">Decrypt</button>
+    <div id="output"></div>
+  </div>
 
   <script>
-    // Extract ciphertext from URL query string
-    const params = new URLSearchParams(window.location.search);
-    const ciphertextFromUrl = params.get("ciphertext") || "";
-    document.getElementById("cipher").value = ciphertextFromUrl;
-
-    function keywordOrder(keyword) {
-      const arr = Array.from(keyword).map((ch, i) => ({ch, i}));
-      const sorted = arr.slice().sort((a,b) => {
-        const A = a.ch.toUpperCase(), B = b.ch.toUpperCase();
-        if (A < B) return -1; if (A > B) return 1; return a.i - b.i;
-      });
-      const order = new Array(keyword.length);
-      sorted.forEach((item, rank) => { order[item.i] = rank; });
+    // ---------- Key order helper ----------
+    function keyOrder(key) {
+      let arr = key.split("").map((ch, idx) => [ch, idx]);
+      arr.sort((a, b) => a[0] === b[0] ? a[1] - b[1] : a[0].localeCompare(b[0]));
+      let order = Array(key.length).fill(0);
+      arr.forEach(([, idx], rank) => order[idx] = rank);
       return order;
     }
 
-    function decrypt(ciphertext, keyword) {
-      const cols = keyword.length;
-      const rows = Math.ceil(ciphertext.length / cols);
-      const order = keywordOrder(keyword);
-      const matrix = Array.from({length: rows}, () => new Array(cols).fill(''));
+    // ---------- Columnar Transposition Decrypt ----------
+  function columnarDecrypt(ciphertext, key, padChar = "#") {
+    let cols = key.length;
+    let rows = Math.ceil(ciphertext.length / cols);
+    let order = keyOrder(key);
 
-      let k = 0;
-      const colIndices = [...Array(cols).keys()].sort((a,b) => order[a] - order[b]);
-      for (const col of colIndices) {
-        for (let r = 0; r < rows; r++) {
-          if (k < ciphertext.length) {
-            matrix[r][col] = ciphertext[k++];
-          }
-        }
+  // figure out column lengths
+    let baseLen = Math.floor(ciphertext.length / cols);
+    let extra = ciphertext.length % cols;
+  let colLens = Array(cols).fill(baseLen);
+  for (let i = 0; i < cols; i++) {
+    if (order[i] < extra) colLens[i]++;
+  }
+
+  // read ciphertext into columns in key order
+  let colsData = Array(cols).fill("");
+  let pos = 0;
+  for (let rank = 0; rank < cols; rank++) {
+    let colIdx = order.indexOf(rank);
+    colsData[colIdx] = ciphertext.slice(pos, pos + colLens[colIdx]);
+    pos += colLens[colIdx];
+  }
+
+  // rebuild plaintext row by row
+  let plaintext = "";
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (r < colsData[c].length) plaintext += colsData[c][r];
+    }
+  }
+
+  // remove padding at the end if present
+  while (plaintext.endsWith(padChar)) {
+    plaintext = plaintext.slice(0, -1);
+  }
+
+  return plaintext;
+}
+
+
+    // ---------- UI ----------
+    const params = new URLSearchParams(window.location.search);
+    const ciphertext = params.get("c") || "";
+    document.getElementById("cipher").innerText = "Ciphertext: " + ciphertext;
+
+    function decrypt() {
+      let key = document.getElementById("key").value.trim();
+      if (!key) {
+        alert("Please enter key");
+        return;
       }
-
-      let plaintext = '';
-      for (let r = 0; r < rows; r++) {
-        plaintext
+      let plaintext = columnarDecrypt(ciphertext, key);
+      document.getElementById("output").innerText = "Plaintext: " + plaintext;
+    }
+  </script>
+</body>
+</html>
